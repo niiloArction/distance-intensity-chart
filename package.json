@@ -19,8 +19,9 @@
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
-    "@arction/lcjs": "^2.2.0",
+    "@arction/lcjs": "^3.0.1",
     "@arction/xydata": "^1.4.0",
-    "earcut": "^2.2.2"
+    "earcut": "^2.2.2",
+    "update": "^0.7.4"
   }
 }

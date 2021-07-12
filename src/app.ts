@@ -9,8 +9,7 @@ const CONFIG = {
 
 const dashboard = lightningChart().Dashboard({
     numberOfColumns: 1,
-    numberOfRows: 2,
-    disableAnimations: true,
+    numberOfRows: 2
 })
 
 const distanceIntensityChart = dashboard.createChartXY({
@@ -26,41 +25,28 @@ const waterfallChart = dashboard.createChartXY({
 // Style charts to get "shared X Axis look"
 distanceIntensityChart.setPadding({ bottom: 2 }).setTitle('Distance intensity + waterfall chart')
 const distanceIntensityAxisX = distanceIntensityChart.getDefaultAxisX().setTickStrategy(AxisTickStrategies.Empty).setStrokeStyle(emptyLine)
-const distanceIntensityAxisY = distanceIntensityChart.getDefaultAxisY().setTickStrategy(AxisTickStrategies.Empty)
+const distanceIntensityAxisY = distanceIntensityChart.getDefaultAxisY()
 waterfallChart.setPadding({ top: 2 }).setTitleFillStyle(emptyFill)
-waterfallChart.getDefaultAxisY().setTickStrategy(AxisTickStrategies.Empty)
 dashboard
     .setSplitterStyle((line: SolidLine) => line.setThickness(1))
     .setRowHeight(0, 2)
     .setRowHeight(1, 5)
 
 // Setup chart series, axes.
+// TODO: Synchronized X Axes
 distanceIntensityChart.getDefaultAxisX().setInterval(-CONFIG.timeDomain, 0).setScrollStrategy(AxisScrollStrategies.progressive)
+waterfallChart.getDefaultAxisX().setInterval(-CONFIG.timeDomain, 0).setScrollStrategy(AxisScrollStrategies.progressive)
 const distanceIntensitySeries = distanceIntensityChart.addAreaSeries({ type: AreaSeriesTypes.Positive }).add({ x: 0, y: 0 })
-// NOTE: Bit of a hack, as heatmap series doesn't yet support scrolling data properly.
-const waterfallAxisX = waterfallChart.addAxisX().setStrokeStyle(emptyLine).setTickStrategy(AxisTickStrategies.Empty)
-// Control visible X Axis interval by scrolling intensity chart X Axis
-distanceIntensityAxisX.onScaleChange((start, end) => waterfallChart.getDefaultAxisX().setInterval(start, end, false, false))
-// Disable mouse interactions that affect Axes.
-waterfallChart.getDefaultAxisX().setMouseInteractions(false)
-waterfallChart.setMouseInteractions(false)
-distanceIntensityAxisX.setMouseInteractions(false)
-distanceIntensityChart.setMouseInteractions(false)
-// Disable default auto cursors.
-distanceIntensityChart.setAutoCursorMode(AutoCursorModes.disabled)
-waterfallChart.setAutoCursorMode(AutoCursorModes.disabled)
 
 const waterfallSeries = waterfallChart
-    .addHeatmapSeries({
-        xAxis: waterfallAxisX,
-        type: IntensitySeriesTypes.Grid,
-        columns: CONFIG.timeDomain,
-        rows: CONFIG.waterfallSampleSize,
-        start: { x: 0, y: 0 },
-        end: { x: 100, y: 100 },
-        pixelate: true,
+    .addHeatmapScrollingGridSeries({
+        resolution: CONFIG.waterfallSampleSize
     })
-    .setWireframeStyle(new SolidFill({ color: ColorRGBA(0, 255, 0, 100) }))
+    .setPixelInterpolationMode('disabled')
+    .setWireframeStyle(new SolidLine({
+        thickness: 1,
+        fillStyle: new SolidFill({ color: ColorRGBA(0, 255, 0, 100) })
+    }))
     .setFillStyle(
         new PalettedFill({
             lookUpProperty: 'value',
@@ -82,7 +68,7 @@ const waterfallSeries = waterfallChart
 
 let xPos = 1
 const addSample = (waterfallSampleValues: number[]) => {
-    waterfallSeries.addColumn(1, 'value', [waterfallSampleValues])
+    waterfallSeries.addIntensityValues([waterfallSampleValues])
     const total = waterfallSampleValues.reduce((prev, cur) => prev + cur, 0)
     distanceIntensitySeries.add({
         x: xPos,
